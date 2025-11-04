@@ -1,17 +1,13 @@
 import { BASE_API_URL } from "@/lib/global";
 import axios from "axios";
 
-/**
- * axiosInstance → untuk koneksi dasar ke backend
- */
+
 const axiosInstance = axios.create({
   baseURL: BASE_API_URL,
-  timeout: 10000, // maksimal waktu tunggu 10 detik
+  timeout: 10000, 
 });
 
-/**
- * GET → ambil data dari API
- */
+
 export const get = async (url: string, token: string) => {
   try {
     const { data } = await axiosInstance.get(url, {
@@ -24,9 +20,7 @@ export const get = async (url: string, token: string) => {
   }
 };
 
-/**
- * POST → kirim data ke API
- */
+
 export const post = async (url: string, body: any, token: string) => {
   try {
     const { data } = await axiosInstance.post(url, body, {
@@ -39,9 +33,7 @@ export const post = async (url: string, body: any, token: string) => {
   }
 };
 
-/**
- * PUT → update data di API
- */
+
 export const put = async (url: string, body: any, token: string) => {
   try {
     const { data } = await axiosInstance.put(url, body, {
@@ -54,9 +46,7 @@ export const put = async (url: string, body: any, token: string) => {
   }
 };
 
-/**
- * DELETE → hapus data di API
- */
+
 export const remove = async (url: string, token: string) => {
   try {
     const { data } = await axiosInstance.delete(url, {
