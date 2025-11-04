@@ -1,82 +1,130 @@
 "use client";
 
-import { storeCookie } from "@/lib/client-cookie";
+import { get } from "@/lib/api-bridge";
+import { getCookie, storeCookie } from "@/lib/client-cookie";
 import { BASE_API_URL } from "@/lib/global";
 import axios from "axios";
-import { useRouter } from "next/navigation";
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import { ToastContainer, toast } from "react-toastify";
-import 'react-toastify/dist/ReactToastify.css';
+import "react-toastify/dist/ReactToastify.css";
 
-const LoginPage = () => {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const router = useRouter();
+interface IUser {
+  id: number;
+  name: string;
+  email: string;
+  role: string;
+}
 
-  const handleSubmit = async (e: FormEvent) => {
-    e.preventDefault();
+const ProfilePage = () => {
+  const [user, setUser] = useState<IUser | null>(null);
+  const [newPassword, setNewPassword] = useState("");
+  const token = getCookie("token") || "";
+  const id = getCookie("id") || "";
+
+  // 🔹 Ambil data user dari backend
+  const fetchUser = async () => {
     try {
-      const url = `${BASE_API_URL}/user/login`;
-      const { data } = await axios.post(url, { email, password });
-
+      const { data } = await get(`/user/${id}`, token);
       if (data.status) {
-        toast.success("Login berhasil!");
-        storeCookie("token", data.token);
-        storeCookie("id", data.data.id);
-        storeCookie("name", data.data.name);
-        setTimeout(() => router.replace("/dashboard"), 1000);
+        setUser(data.data);
       } else {
-        toast.warning(data.message || "Login gagal!");
+        toast.warning("Gagal memuat data profil");
       }
-    } catch (error) {
-      console.error(error);
-      toast.error("Terjadi kesalahan server!");
+    } catch (err) {
+      toast.error("Terjadi kesalahan");
+      console.error(err);
     }
   };
 
+  useEffect(() => {
+    fetchUser();
+  }, []);
+
+  // 🔹 Update profil
+  const handleSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+    try {
+      const url = `${BASE_API_URL}/user/${id}`;
+      const payload = {
+        name: user?.name,
+        email: user?.email,
+        password: newPassword || undefined,
+      };
+
+      const { data } = await axios.put(url, payload, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (data.status) {
+        toast.success("Profil berhasil diperbarui");
+        storeCookie("name", data.data.name);
+      } else {
+        toast.warning(data.message || "Update gagal");
+      }
+    } catch (error) {
+      toast.error("Gagal mengubah data");
+      console.error(error);
+    }
+  };
+
+  if (!user) return <div className="p-6">Wait...</div>;
+
   return (
-    <div className="w-full max-w-sm bg-white p-6 rounded-lg shadow-md">
+    <div className="min-h-screen bg-gray-100 p-6 flex justify-center">
       <ToastContainer />
-      <h2 className="text-center text-2xl font-bold text-blue-600 mb-6">Presensi Online</h2>
+      <div className="bg-gray-50 p-6 rounded-lg shadow-md w-full max-w-md">
+        <h1 className="text-2xl font-bold text-blue-600 mb-6 text-center">
+          Profil Pengguna
+        </h1>
 
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
-          <label htmlFor="email" className="block text-sm font-medium text-black">
-            Email
-          </label>
-          <input
-            id="email"
-            type="email"
-            required
-            className="w-full border rounded-md p-2 mt-1 focus:ring focus:ring-blue-200 text-black"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-          />
-        </div>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700">
+              Nama
+            </label>
+            <input
+              type="text"
+              className="w-full border rounded-md p-2 mt-1 focus:ring focus:ring-blue-200"
+              value={user.name}
+              onChange={(e) => setUser({ ...user, name: e.target.value })}
+            />
+          </div>
 
-        <div>
-          <label htmlFor="password" className="block text-sm font-medium text-black">
-            Password
-          </label>
-          <input
-            id="password"
-            type="password"
-            required
-            className="w-full border rounded-md p-2 mt-1 focus:ring focus:ring-blue-200 text-gray-700"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-          />
-        </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700">
+              Email
+            </label>
+            <input
+              type="email"
+              className="w-full border rounded-md p-2 mt-1 focus:ring focus:ring-blue-200"
+              value={user.email}
+              onChange={(e) => setUser({ ...user, email: e.target.value })}
+            />
+          </div>
 
-        <button
-          type="submit"
-          className="w-full bg-blue-600 text-white p-2 rounded-md hover:bg-blue-700 transition"
-        >
-          Login
-        </button>
-      </form>
+          <div>
+            <label className="block text-sm font-medium text-gray-700">
+              Password Baru (opsional)
+            </label>
+            <input
+              type="password"
+              placeholder="Kosongkan jika tidak ingin ubah"
+              className="w-full border rounded-md p-2 mt-1 focus:ring focus:ring-blue-200"
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
+            />
+          </div>
+
+          <button
+            type="submit"
+            className="w-full bg-blue-600 text-white p-2 rounded-md hover:bg-blue-700 transition"
+          >
+            Simpan Perubahan
+          </button>
+        </form>
+      </div>
     </div>
   );
 };
 
-export default LoginPage;
+export default ProfilePage;
