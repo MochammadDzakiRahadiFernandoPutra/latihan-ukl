@@ -5,7 +5,7 @@ export const getCookie = (key: string) => {
 };
 
 export const storeCookie = (key: string, value: string) => {
-  Cookies.set(key, value, { expires: 1 }); // berlaku 1 hari
+  Cookies.set(key, value, { expires: 1 }); 
 };
 
 export const removeCookie = (key: string) => {
